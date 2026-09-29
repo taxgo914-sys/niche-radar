@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#EEF2F0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1614" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ニッチレーダー">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>ニッチレーダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: 片手操作の1カラム。上に日付と国の切替、中央にワードの一覧、下にタブバー */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --fg:#15201D; --muted:#5E6E69; --line:#D5DEDA;
+  --accent:#0C7A68; --accent-soft:#D6ECE6; --hot:#B8661A; --hot-soft:#F5E4D2;
+  --display:"DotGothic16","Zen Kaku Gothic New",system-ui,sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1614; --surface:#18221F; --fg:#E4ECE9; --muted:#8FA19B; --line:#2A3834;
+  --accent:#3CC4A9; --accent-soft:#16332D; --hot:#E8A35C; --hot-soft:#3A2A19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1614; --surface:#18221F; --fg:#E4ECE9; --muted:#8FA19B; --line:#2A3834;
+  --accent:#3CC4A9; --accent-soft:#16332D; --hot:#E8A35C; --hot-soft:#3A2A19; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{max-width:560px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:14px 16px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{margin:0;font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.04em}
+.brand h1 span{color:var(--accent)}
+.brand small{color:var(--muted);font-size:12px}
+.brand .right{display:flex;align-items:center;gap:10px}
+.tr{border:1px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;min-height:32px}
+.tr[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.orig{display:block;font-size:12px;color:var(--muted);overflow-wrap:anywhere;margin-top:1px}
+.sheet .orig{font-size:14px}
+
+.scroller{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.scroller::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;display:flex;gap:6px;align-items:baseline;white-space:nowrap}
+.chip b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip[aria-pressed="true"] b{color:var(--bg);opacity:.7}
+
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.search input{border:0;background:transparent;outline:0;flex:1;min-width:0}
+.search svg{flex:none;color:var(--muted)}
+
+.banner{margin:12px 16px 0;padding:10px 12px;border-radius:10px;background:var(--hot-soft);color:var(--fg);font-size:13px}
+main{flex:1;padding:4px 16px 96px}
+.sum{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;padding:12px 2px 6px;letter-spacing:.04em}
+ol.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);width:100%;text-align:left;background:none;border-left:0;border-right:0;border-top:0}
+.row .term{font-weight:500;overflow-wrap:anywhere;min-width:0}
+.row .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;font-size:12px;color:var(--muted);align-items:center}
+.mk{font-family:var(--mono);font-size:10px;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted)}
+.eng{font-family:var(--mono);font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:0 5px}
+.star{color:var(--hot);font-size:14px}
+.sig{display:flex;align-items:flex-end;gap:2px;height:18px}
+.sig i{width:4px;background:var(--line);border-radius:1px}
+.sig i.on{background:var(--accent)}
+.sig.hot i.on{background:var(--hot)}
+.score{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.empty{padding:48px 8px;text-align:center;color:var(--muted)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:6px 16px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center}
+nav.tabs div{display:flex;width:100%;max-width:560px}
+nav.tabs button{flex:1;background:none;border:0;padding:6px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
+
+.sheet-bg{position:fixed;inset:0;background:rgba(10,20,17,.45);z-index:10;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.sheet h2{margin:0;font-size:18px;overflow-wrap:anywhere;text-wrap:balance}
+.sheet .detail{font-size:13px;color:var(--muted)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.actions a,.actions button{display:flex;justify-content:center;align-items:center;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);text-decoration:none;font-size:14px}
+.actions .primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+
+.panel{display:flex;flex-direction:column;gap:14px;padding-top:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:15px}
+.card p{margin:0;font-size:13px;color:var(--muted)}
+.card a.btn{align-self:flex-start;background:var(--accent);color:var(--surface);text-decoration:none;border-radius:10px;padding:9px 14px;font-size:14px}
+.card code{font-family:var(--mono);font-size:12px;overflow-wrap:anywhere}
+.legend{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.legend div{display:flex;gap:10px;align-items:center}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:13px;z-index:20}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}}}
+</style>
+
+</head><body>
+<div class="app">
+  <header>
+    <div class="brand"><h1>ニッチ<span>レーダー</span></h1><div class="right"><small id="updated"></small>
+      <button class="tr" id="tr" aria-pressed="false" title="外国語のワードを日本語で表示"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 9"/><path d="m13 21 4-10 4 10M14.5 17.5h5"/></svg>日本語</button></div></div>
+    <div class="scroller" id="days" aria-label="日付"></div>
+    <div class="scroller" id="markets" aria-label="国"></div>
+    <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="q" type="search" placeholder="ワードやシードで絞り込み" autocomplete="off"></label>
+  </header>
+  <div class="banner" id="sample" hidden>サンプル表示中です。GitHubで毎日の収集が始まると、実際のワードに切り替わります。</div>
+  <main id="main"></main>
+</div>
+
+<nav class="tabs"><div>
+  <button id="t-today" aria-current="page" data-tab="today"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 12 19 5"/></svg>新着</button>
+  <button id="t-saved" data-tab="saved"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></svg>保存</button>
+  <button id="t-info" data-tab="info"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>設定</button>
+</div></nav>
+
+<script>
+const ENG = {google:"G",yahoo_jp:"Y!J",yahoo:"Y!",bing:"B",ddg:"D",naver:"N",yandex:"Я",baidu:"百"};
+const MK = {JP:"日本",US:"米国",KR:"韓国",RU:"ロシア",DE:"ドイツ",CN:"中国"};
+const S = {days:[], day:null, items:[], market:"ALL", q:"", tab:"today", saved:load(), sample:false, ja:loadJa()};
+function loadJa(){try{return localStorage.getItem("niche.ja")==="1"}catch(e){return false}}
+function saveJa(){try{localStorage.setItem("niche.ja",S.ja?"1":"0")}catch(e){}}
+
+function load(){try{return JSON.parse(localStorage.getItem("niche.saved")||"[]")}catch(e){return []}}
+function persist(){try{localStorage.setItem("niche.saved",JSON.stringify(S.saved))}catch(e){}}
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1600)}
+
+/* ---- サンプル (データ未取得時のみ) ---- */
+function sampleData(){
+  const t=new Date(), iso=d=>new Date(t-d*864e5).toISOString().slice(0,10);
+  const rows=[
+    ["JP","盆栽","盆栽 苔 カビ 白い 対処","yahoo_jp",.91],["JP","盆栽","盆栽 針金 アルミ 銅 使い分け 初心者","google",.86],
+    ["JP","万年筆 インク","万年筆 インク 顔料 詰まり 洗浄 ぬるま湯","bing",.83],["JP","古民家 diy","古民家 diy 土壁 ひび 補修 漆喰","yahoo_jp",.8],
+    ["JP","万年筆 インク","万年筆 インク 混ぜる 同じメーカー 沈殿","google",.74],["JP","盆栽","盆栽 ベランダ 北向き 松","yahoo_jp",.7],
+    ["US","sourdough starter","sourdough starter smells like nail polish day 5","google",.9],["US","tardigrade","tardigrade in moss how to find microscope","yahoo",.84],
+    ["US","mechanical keyboard","mechanical keyboard lube stabilizers without desoldering","bing",.78],["US","sourdough starter","sourdough starter rye to whole wheat switch","ddg",.66],
+    ["KR","필름카메라","필름카메라 현상 셀프 흑백 약품","naver",.88],["KR","캠핑","캠핑 동계 난로 일산화탄소 경보기 추천","naver",.72],
+    ["RU","аквариум","аквариум креветки неокардина линька белое кольцо","yandex",.87],["DE","modelleisenbahn","modelleisenbahn spur n weichen digital umbauen","google",.81],
+    ["CN","多肉植物","多肉植物 为什么 叶子 发软 透明","baidu",.89],["CN","茶具","茶具 教程 紫砂壶 开壶 步骤","baidu",.76]];
+  const JA={"sourdough starter smells like nail polish day 5":"サワードウスターター 除光液のにおい 5日目",
+    "tardigrade in moss how to find microscope":"コケの中のクマムシ 見つけ方 顕微鏡",
+    "mechanical keyboard lube stabilizers without desoldering":"メカニカルキーボード スタビライザー 注油 はんだ外しなし",
+    "sourdough starter rye to whole wheat switch":"サワードウスターター ライ麦から全粒粉に切り替え",
+    "필름카메라 현상 셀프 흑백 약품":"フィルムカメラ 現像 セルフ 白黒 薬品",
+    "캠핑 동계 난로 일산화탄소 경보기 추천":"キャンプ 冬 ストーブ 一酸化炭素警報器 おすすめ",
+    "аквариум креветки неокардина линька белое кольцо":"水槽 ミナミヌマエビ 脱皮 白い輪",
+    "modelleisenbahn spur n weichen digital umbauen":"鉄道模型 Nゲージ ポイント デジタル化 改造",
+    "多肉植物 为什么 叶子 发软 透明":"多肉植物 なぜ 葉が柔らかい 透明",
+    "茶具 教程 紫砂壶 开壶 步骤":"茶器 使い方 紫砂の急須 使い始め 手順"};
+  const items=rows.map(([market,seed,term,engines,score])=>({market,seed,term,engines,score,...(JA[term]?{ja:JA[term]}:{})}));
+  return {index:[0,1,2].map(d=>({date:iso(d),total:d?items.length-d*3:items.length})),items};
+}
+
+async function getJSON(u){const r=await fetch(u,{cache:"no-cache"});if(!r.ok)throw new Error(r.status);return r.json()}
+async function init(){
+  try{
+    const idx=await getJSON("data/index.json");
+    S.days=idx.days; if(!S.days.length) throw new Error("empty");
+    await pick(S.days[0].date);
+  }catch(e){
+    const d=sampleData(); S.sample=true; S.days=d.index; S.day=d.index[0].date; S.items=d.items;
+    $("#sample").hidden=false; render();
+  }
+  if("serviceWorker" in navigator && location.protocol==="https:" && location.hostname.endsWith("github.io")){
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  }
+}
+async function pick(date){
+  S.day=date;
+  if(S.sample){render();return}
+  try{S.items=(await getJSON(`data/${date}.json`)).items}catch(e){S.items=[];toast("この日のデータを読めませんでした")}
+  render();
+}
+
+/* ---- 描画 ---- */
+function signal(score){
+  const n=Math.max(1,Math.round(score*4)), hot=score>=.85;
+  return `<span class="sig${hot?" hot":""}" aria-label="ニッチ度 ${score}">${[6,10,14,18].map((h,i)=>`<i style="height:${h}px" class="${i<n?"on":""}"></i>`).join("")}</span>`;
+}
+const isSaved=it=>S.saved.some(s=>s.term===it.term&&s.market===it.market);
+function rowHTML(it,i){
+  return `<li><button class="row" data-i="${i}">
+    ${signal(it.score)}
+    <span style="min-width:0">${S.ja&&it.ja?`<span class="term">${esc(it.ja)}</span><span class="orig">${esc(it.term)}</span>`:`<span class="term">${esc(it.term)}</span>`}
+      <span class="meta"><span class="mk">${esc(it.market)}</span>${esc(it.seed)}
+      ${String(it.engines).split(",").map(e=>`<span class="eng">${ENG[e]||esc(e)}</span>`).join("")}
+      ${isSaved(it)?'<span class="star" aria-label="保存済み">★</span>':""}</span></span>
+    <span class="score">${Number(it.score).toFixed(2)}</span></button></li>`;
+}
+let shown=[];
+function filtered(list){
+  const q=S.q.trim().toLowerCase();
+  return list.filter(it=>(S.market==="ALL"||it.market===S.market)&&(!q||it.term.includes(q)||(it.ja||"").toLowerCase().includes(q)||it.seed.toLowerCase().includes(q)))
+             .sort((a,b)=>b.score-a.score);
+}
+function render(){
+  const list = S.tab==="saved" ? S.saved : S.items;
+  $("#tr").setAttribute("aria-pressed",S.ja);
+  $("#updated").textContent = S.day ? `${S.day.slice(5).replace("-","/")} 収集` : "";
+  $("#days").hidden = S.tab!=="today";
+  $("#days").innerHTML = S.days.map(d=>`<button class="chip" aria-pressed="${d.date===S.day}" data-day="${d.date}">${d.date.slice(5).replace("-","/")}<b>${d.total}</b></button>`).join("");
+  const counts={}; list.forEach(it=>counts[it.market]=(counts[it.market]||0)+1);
+  $("#markets").innerHTML = [["ALL","すべて",list.length],...Object.keys(counts).sort().map(m=>[m,MK[m]||m,counts[m]])]
+    .map(([k,l,n])=>`<button class="chip" aria-pressed="${S.market===k}" data-mk="${k}">${l}<b>${n}</b></button>`).join("");
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false"));
+  const hideFilters = S.tab==="info";
+  $("#markets").hidden=hideFilters; $(".search").hidden=hideFilters;
+
+  if(S.tab==="info"){$("#main").innerHTML=infoHTML();return}
+  shown=filtered(list);
+  const head = S.tab==="saved" ? "保存したワード" : "今日はじめて現れたワード";
+  $("#main").innerHTML = `<div class="sum"><span>${head}</span><span>${shown.length}件 · ニッチ度順</span></div>` +
+    (shown.length ? `<ol class="list">${shown.slice(0,400).map(rowHTML).join("")}</ol>`
+      : `<div class="empty">${S.tab==="saved"?"ワードをタップして「保存」すると、ここに集まります。":"条件に合うワードがありません。"}</div>`);
+}
+function repoInfo(){
+  const h=location.hostname; if(!h.endsWith("github.io")) return null;
+  return {owner:h.split(".")[0], repo:location.pathname.split("/").filter(Boolean)[0]||""};
+}
+function infoHTML(){
+  const r=repoInfo();
+  const run = r ? `https://github.com/${r.owner}/${r.repo}/actions/workflows/daily.yml` : null;
+  const cfg = r ? `https://github.com/${r.owner}/${r.repo}/edit/main/config.json` : null;
+  return `<div class="panel">
+  <div class="card"><h3>今すぐ収集する</h3><p>毎朝6時に自動で集めます。すぐ集めたいときは、開いた画面で「Run workflow」を押してください。30分ほどで反映されます。</p>
+    ${run?`<a class="btn" href="${run}" target="_blank" rel="noopener">GitHubで実行</a>`:`<p>GitHub Pages に置くとボタンが表示されます。</p>`}</div>
+  <div class="card"><h3>追う分野を変える</h3><p><code>config.json</code> の <code>seeds</code> に言葉を追加・削除します。</p>
+    ${cfg?`<a class="btn" href="${cfg}" target="_blank" rel="noopener">config.json を編集</a>`:""}</div>
+  <div class="card"><h3>ニッチ度の見方</h3><div class="legend">
+    <div>${signal(.95)}<span>0.85以上：ごく少数だけが検索</span></div>
+    <div>${signal(.6)}<span>0.5前後：ロングテール</span></div>
+    <div>${signal(.2)}<span>低い：比較的よく検索される</span></div></div>
+    <p>サジェストの下位に出る、語が長い、1つのエンジンにしか出ない、の3点で決まります。</p></div>
+  <div class="card"><h3>日本語訳</h3><p>右上の「日本語」ボタンで、外国語のワードを日本語訳に切り替えます。訳は毎朝の収集時に自動で付きます。</p></div>
+  <div class="card"><h3>エンジン記号</h3><p>${Object.entries(ENG).map(([k,v])=>`<span class="eng">${v}</span> ${k}`).join("　")}</p></div>
+  </div>`;
+}
+
+/* ---- 詳細シート ---- */
+function openSheet(it){
+  const bg=document.createElement("div"); bg.className="sheet-bg";
+  const q=encodeURIComponent(it.term), saved=isSaved(it);
+  bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(it.term)}">
+    <h2>${esc(it.ja||it.term)}</h2>${it.ja?`<span class="orig">原文：${esc(it.term)}</span>`:""}
+    <div class="detail">${esc(MK[it.market]||it.market)} · シード「${esc(it.seed)}」 · ニッチ度 ${Number(it.score).toFixed(2)}</div>
+    <div class="actions">
+      <a class="primary" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Googleで検索</a>
+      <a href="https://search.yahoo.co.jp/search?p=${q}" target="_blank" rel="noopener">Yahoo!で検索</a>
+      <button id="cp">コピー</button>
+      <button id="sv">${saved?"保存を外す":"★ 保存"}</button>
+      ${it.market!=="JP"?`<a href="https://translate.google.com/?sl=auto&tl=ja&op=translate&text=${q}" target="_blank" rel="noopener">Google翻訳で見る</a>
+      <a href="https://translate.google.com/translate?sl=auto&tl=ja&u=${encodeURIComponent("https://www.google.com/search?q="+it.term)}" target="_blank" rel="noopener">検索結果を日本語で</a>`:""}
+    </div></div>`;
+  bg.addEventListener("click",e=>{if(e.target===bg)bg.remove()});
+  bg.querySelector("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(it.term);toast("コピーしました")}catch(e){toast("コピーできませんでした")}};
+  bg.querySelector("#sv").onclick=()=>{
+    S.saved = saved ? S.saved.filter(s=>!(s.term===it.term&&s.market===it.market)) : [...S.saved,{...it,savedAt:S.day}];
+    persist(); bg.remove(); toast(saved?"保存を外しました":"保存しました"); render();
+  };
+  document.body.appendChild(bg);
+}
+
+/* ---- 操作 ---- */
+document.addEventListener("click",e=>{
+  const d=e.target.closest("[data-day]"); if(d){pick(d.dataset.day);return}
+  const m=e.target.closest("[data-mk]"); if(m){S.market=m.dataset.mk;render();return}
+  const t=e.target.closest("[data-tab]"); if(t){S.tab=t.dataset.tab;S.market="ALL";render();scrollTo(0,0);return}
+  const r=e.target.closest(".row"); if(r){openSheet(shown[+r.dataset.i]);return}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelector(".sheet-bg")?.remove()});
+$("#tr").addEventListener("click",()=>{S.ja=!S.ja;saveJa();render();toast(S.ja?"日本語で表示":"原文で表示")});
+$("#q").addEventListener("input",e=>{S.q=e.target.value;render()});
+init();
+</script>
+
+</body></html>
