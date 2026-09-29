@@ -1,0 +1,129 @@
+{
+  "max_requests_per_run": 1200,
+  "max_requests_per_market": 200,
+  "prefixes_per_seed_per_day": 15,
+  "sleep_seconds": [
+    0.8,
+    1.8
+  ],
+  "depth2_per_seed": 10,
+  "keep_days": 60,
+  "translate": true,
+  "translate_skip_markets": [
+    "JP"
+  ],
+  "max_translations_per_run": 3000,
+  "markets": [
+    {
+      "name": "JP",
+      "engines": [
+        "google",
+        "yahoo_jp",
+        "bing",
+        "ddg"
+      ],
+      "hl": "ja",
+      "gl": "jp",
+      "mkt": "ja-JP",
+      "kl": "jp-jp",
+      "expand": [
+        "ja",
+        "latin"
+      ],
+      "questions": "ja",
+      "seeds": [
+        "盆栽",
+        "万年筆 インク",
+        "古民家 DIY"
+      ]
+    },
+    {
+      "name": "US",
+      "engines": [
+        "google",
+        "bing",
+        "yahoo",
+        "ddg"
+      ],
+      "hl": "en",
+      "gl": "us",
+      "mkt": "en-US",
+      "kl": "us-en",
+      "expand": [
+        "latin"
+      ],
+      "questions": "en",
+      "seeds": [
+        "mechanical keyboard",
+        "sourdough starter",
+        "tardigrade"
+      ],
+      "yahoo_region": "us"
+    },
+    {
+      "name": "KR",
+      "engines": [
+        "naver",
+        "google"
+      ],
+      "hl": "ko",
+      "gl": "kr",
+      "expand": [
+        "ko"
+      ],
+      "questions": "ko",
+      "seeds": [
+        "캠핑",
+        "필름카메라"
+      ]
+    },
+    {
+      "name": "RU",
+      "engines": [
+        "yandex",
+        "google"
+      ],
+      "hl": "ru",
+      "gl": "ru",
+      "expand": [
+        "ru"
+      ],
+      "questions": "ru",
+      "seeds": [
+        "аквариум",
+        "рыбалка"
+      ]
+    },
+    {
+      "name": "DE",
+      "engines": [
+        "google",
+        "bing"
+      ],
+      "hl": "de",
+      "gl": "de",
+      "mkt": "de-DE",
+      "expand": [
+        "de"
+      ],
+      "questions": "de",
+      "seeds": [
+        "Modelleisenbahn"
+      ]
+    },
+    {
+      "name": "CN",
+      "engines": [
+        "baidu"
+      ],
+      "expand": [
+        "zh"
+      ],
+      "questions": "zh",
+      "seeds": [
+        "多肉植物",
+        "茶具"
+      ]
+    }
+  ]
+}
