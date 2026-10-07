@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS seed_log(
   date TEXT, market TEXT, seed TEXT, source TEXT, cat TEXT,
   PRIMARY KEY(date, market, seed));
 CREATE TABLE IF NOT EXISTS snowball(
-  date TEXT, market TEXT, term TEXT, score REAL, cat TEXT,
+  date TEXT, market TEXT, term TEXT, score REAL, cat TEXT, seed TEXT,
   PRIMARY KEY(date, market, term));
 """
 
@@ -323,15 +323,19 @@ def wiki_candidates(m, max_pages=6):
     return out
 
 
-def make_seed(term):
-    """見つかったワードを、次の日のシードに使える短さに切る"""
+def make_seed(term, parent=""):
+    """見つかったワードから、次の日のシードを作る。親シードの「続き」の部分を使い、話題を一歩奥へ進める"""
     toks = term.split()
     while len(toks) > 1 and toks[0] in LEAD_WORDS:      # 「how」「why」などの疑問語は外す
         toks = toks[1:]
+    ptoks = normalize(parent).split()
+    if ptoks and toks[:len(ptoks)] == ptoks and len(toks) > len(ptoks):
+        toks = [ptoks[-1]] + toks[len(ptoks):]          # 親の最後の語 + 続きの語
     toks = toks[:3]
     while len(toks) > 1 and len(" ".join(toks)) > 24:   # 単語の途中で切らない
         toks = toks[:-1]
-    return " ".join(toks)[:24].strip() if len(toks) > 1 else (toks[0][:24] if toks else "")
+    seed = " ".join(toks)[:24].strip()
+    return "" if normalize(seed) == normalize(parent) else seed
 
 
 def _weighted_sample(rnd, items, weights, k):
@@ -388,12 +392,13 @@ def pick_seeds(cfg, m, db, today, wiki_fn=None):
     want_snow = cfg.get("snowball_seeds_per_market", 2)
     if want_snow:
         since = (day - dt.timedelta(days=3)).isoformat()
-        rows = db.execute("""SELECT term, score, cat FROM snowball
+        rows = db.execute("""SELECT term, score, cat, seed FROM snowball
                              WHERE market=? AND date>=? AND date<?""", (name, since, today)).fetchall()
+        recent_n = {normalize(x) for x in recent}
         cand = {}
-        for term, score, cat in rows:
-            seed = make_seed(term)
-            if len(seed) >= 3 and seed not in recent and normalize(seed) not in names:
+        for term, score, cat, parent in rows:
+            seed = make_seed(term, parent)
+            if len(seed) >= 3 and normalize(seed) not in recent_n and normalize(seed) not in names:
                 if seed not in cand or cand[seed][0] < score:
                     cand[seed] = (score, cat)
         picked = _weighted_sample(rnd, list(cand), [max(cand[s][0], 0.05) for s in cand], want_snow)
@@ -515,8 +520,8 @@ def report(cfg, db, today, out_dir, top=30):
     for r in results:
         if seen.get(r["market"], 0) < keep:
             seen[r["market"]] = seen.get(r["market"], 0) + 1
-            db.execute("INSERT OR REPLACE INTO snowball VALUES(?,?,?,?,?)",
-                       (today, r["market"], r["term"], r["score"], r["cat"]))
+            db.execute("INSERT OR REPLACE INTO snowball VALUES(?,?,?,?,?,?)",
+                       (today, r["market"], r["term"], r["score"], r["cat"], r["seed"]))
     db.commit()
 
     out = Path(out_dir)
