@@ -46,6 +46,7 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var
 .brand .right{display:flex;align-items:center;gap:10px}
 .tr{border:1px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;min-height:32px}
 .tr[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.ct{font-size:10px;border-radius:4px;padding:0 5px;background:var(--hot-soft);color:var(--hot);font-weight:700}
 .orig{display:block;font-size:12px;color:var(--muted);overflow-wrap:anywhere;margin-top:1px}
 .sheet .orig{font-size:14px}
 
@@ -109,6 +110,7 @@ nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
       <button class="tr" id="tr" aria-pressed="false" title="外国語のワードを日本語で表示"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 5h9M8.5 3v2M6 5c1 4 4 7 7 8M11 5c-1 4-4 7-7 9"/><path d="m13 21 4-10 4 10M14.5 17.5h5"/></svg>日本語</button></div></div>
     <div class="scroller" id="days" aria-label="日付"></div>
     <div class="scroller" id="markets" aria-label="国"></div>
+    <div class="scroller" id="cats" aria-label="分野"></div>
     <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
       <input id="q" type="search" placeholder="ワードやシードで絞り込み" autocomplete="off"></label>
   </header>
@@ -125,7 +127,8 @@ nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
 <script>
 const ENG = {google:"G",yahoo_jp:"Y!J",yahoo:"Y!",bing:"B",ddg:"D",naver:"N",yandex:"Я",baidu:"百"};
 const MK = {JP:"日本",US:"米国",KR:"韓国",RU:"ロシア",DE:"ドイツ",CN:"中国"};
-const S = {days:[], day:null, items:[], market:"ALL", q:"", tab:"today", saved:load(), sample:false, ja:loadJa()};
+const CATLAB = {it:"IT", science:"科学", economy:"経済", other:"その他"};
+const S = {days:[], day:null, items:[], market:"ALL", cat:"ALL", q:"", tab:"today", saved:load(), sample:false, ja:loadJa()};
 function loadJa(){try{return localStorage.getItem("niche.ja")==="1"}catch(e){return false}}
 function saveJa(){try{localStorage.setItem("niche.ja",S.ja?"1":"0")}catch(e){}}
 
@@ -139,25 +142,32 @@ function toast(t){const d=document.createElement("div");d.className="toast";d.te
 function sampleData(){
   const t=new Date(), iso=d=>new Date(t-d*864e5).toISOString().slice(0,10);
   const rows=[
-    ["JP","盆栽","盆栽 苔 カビ 白い 対処","yahoo_jp",.91],["JP","盆栽","盆栽 針金 アルミ 銅 使い分け 初心者","google",.86],
-    ["JP","万年筆 インク","万年筆 インク 顔料 詰まり 洗浄 ぬるま湯","bing",.83],["JP","古民家 diy","古民家 diy 土壁 ひび 補修 漆喰","yahoo_jp",.8],
-    ["JP","万年筆 インク","万年筆 インク 混ぜる 同じメーカー 沈殿","google",.74],["JP","盆栽","盆栽 ベランダ 北向き 松","yahoo_jp",.7],
-    ["US","sourdough starter","sourdough starter smells like nail polish day 5","google",.9],["US","tardigrade","tardigrade in moss how to find microscope","yahoo",.84],
-    ["US","mechanical keyboard","mechanical keyboard lube stabilizers without desoldering","bing",.78],["US","sourdough starter","sourdough starter rye to whole wheat switch","ddg",.66],
-    ["KR","필름카메라","필름카메라 현상 셀프 흑백 약품","naver",.88],["KR","캠핑","캠핑 동계 난로 일산화탄소 경보기 추천","naver",.72],
-    ["RU","аквариум","аквариум креветки неокардина линька белое кольцо","yandex",.87],["DE","modelleisenbahn","modelleisenbahn spur n weichen digital umbauen","google",.81],
-    ["CN","多肉植物","多肉植物 为什么 叶子 发软 透明","baidu",.89],["CN","茶具","茶具 教程 紫砂壶 开壶 步骤","baidu",.76]];
-  const JA={"sourdough starter smells like nail polish day 5":"サワードウスターター 除光液のにおい 5日目",
+    ["JP","量子コンピュータ","量子コンピュータ 誤り訂正 符号 実装 自作","google",.9,"it"],
+    ["JP","eBPF","ebpf トレーシング 本番 負荷 オーバーヘッド 計測","yahoo_jp",.86,"it"],
+    ["JP","ペロブスカイト 太陽電池","ペロブスカイト 太陽電池 鉛フリー 錫 劣化 原因","google",.88,"science"],
+    ["JP","菌根菌","菌根菌 針葉樹 苗 接種 方法 家庭","google",.74,"science"],
+    ["JP","長期金利","長期金利 上昇 住宅ローン 変動 影響 試算","yahoo_jp",.82,"economy"],
+    ["JP","電子帳簿保存法","電子帳簿保存法 スキャナ保存 タイムスタンプ 不要 条件","bing",.79,"economy"],
+    ["JP","盆栽","盆栽 苔 カビ 白い 対処","yahoo_jp",.7,"other"],
+    ["US","zero knowledge proof","zero knowledge proof groth16 trusted setup ceremony explained","google",.9,"it"],
+    ["US","yield curve inversion","yield curve inversion 3m10y vs 2s10s recession lead time","bing",.84,"economy"],
+    ["US","solid state battery","solid state battery sulfide electrolyte dendrite cycle life","ddg",.8,"science"],
+    ["US","tardigrade","tardigrade in moss how to find microscope","yahoo",.76,"science"],
+    ["KR","반도체 패키징","반도체 패키징 hbm 수율 열 방출 방식","naver",.88,"it"],
+    ["KR","기준금리","기준금리 동결 가계대출 변동금리 영향 계산","naver",.8,"economy"],
+    ["RU","квантовые вычисления","квантовые вычисления коррекция ошибок поверхностный код","yandex",.87,"it"],
+    ["DE","Festkörperbatterie","festkörperbatterie sulfid elektrolyt serienreife zeitplan","google",.81,"science"],
+    ["CN","固态电池","固态电池 为什么 硫化物 电解质 难量产","baidu",.89,"science"]];
+  const JA={"zero knowledge proof groth16 trusted setup ceremony explained":"ゼロ知識証明 Groth16 信頼できるセットアップ儀式 解説",
+    "yield curve inversion 3m10y vs 2s10s recession lead time":"逆イールド 3か月-10年 対 2年-10年 景気後退までの期間",
+    "solid state battery sulfide electrolyte dendrite cycle life":"全固体電池 硫化物電解質 デンドライト サイクル寿命",
     "tardigrade in moss how to find microscope":"コケの中のクマムシ 見つけ方 顕微鏡",
-    "mechanical keyboard lube stabilizers without desoldering":"メカニカルキーボード スタビライザー 注油 はんだ外しなし",
-    "sourdough starter rye to whole wheat switch":"サワードウスターター ライ麦から全粒粉に切り替え",
-    "필름카메라 현상 셀프 흑백 약품":"フィルムカメラ 現像 セルフ 白黒 薬品",
-    "캠핑 동계 난로 일산화탄소 경보기 추천":"キャンプ 冬 ストーブ 一酸化炭素警報器 おすすめ",
-    "аквариум креветки неокардина линька белое кольцо":"水槽 ミナミヌマエビ 脱皮 白い輪",
-    "modelleisenbahn spur n weichen digital umbauen":"鉄道模型 Nゲージ ポイント デジタル化 改造",
-    "多肉植物 为什么 叶子 发软 透明":"多肉植物 なぜ 葉が柔らかい 透明",
-    "茶具 教程 紫砂壶 开壶 步骤":"茶器 使い方 紫砂の急須 使い始め 手順"};
-  const items=rows.map(([market,seed,term,engines,score])=>({market,seed,term,engines,score,...(JA[term]?{ja:JA[term]}:{})}));
+    "반도체 패키징 hbm 수율 열 방출 방식":"半導体パッケージング HBM 歩留まり 放熱方式",
+    "기준금리 동결 가계대출 변동금리 영향 계산":"基準金利 据え置き 家計ローン 変動金利 影響 計算",
+    "квантовые вычисления коррекция ошибок поверхностный код":"量子計算 誤り訂正 表面符号",
+    "festkörperbatterie sulfid elektrolyt serienreife zeitplan":"全固体電池 硫化物 電解質 量産化 スケジュール",
+    "固态电池 为什么 硫化物 电解质 难量产":"全固体電池 なぜ 硫化物 電解質 量産が難しい"};
+  const items=rows.map(([market,seed,term,engines,score,cat])=>({market,cat,seed,term,engines,score,...(JA[term]?{ja:JA[term]}:{})}));
   return {index:[0,1,2].map(d=>({date:iso(d),total:d?items.length-d*3:items.length})),items};
 }
 
@@ -192,7 +202,7 @@ function rowHTML(it,i){
   return `<li><button class="row" data-i="${i}">
     ${signal(it.score)}
     <span style="min-width:0">${S.ja&&it.ja?`<span class="term">${esc(it.ja)}</span><span class="orig">${esc(it.term)}</span>`:`<span class="term">${esc(it.term)}</span>`}
-      <span class="meta"><span class="mk">${esc(it.market)}</span>${esc(it.seed)}
+      <span class="meta"><span class="mk">${esc(it.market)}</span>${it.cat&&it.cat!=="other"?`<span class="ct">${CATLAB[it.cat]||""}</span>`:""}${esc(it.seed)}
       ${String(it.engines).split(",").map(e=>`<span class="eng">${ENG[e]||esc(e)}</span>`).join("")}
       ${isSaved(it)?'<span class="star" aria-label="保存済み">★</span>':""}</span></span>
     <span class="score">${Number(it.score).toFixed(2)}</span></button></li>`;
@@ -200,7 +210,7 @@ function rowHTML(it,i){
 let shown=[];
 function filtered(list){
   const q=S.q.trim().toLowerCase();
-  return list.filter(it=>(S.market==="ALL"||it.market===S.market)&&(!q||it.term.includes(q)||(it.ja||"").toLowerCase().includes(q)||it.seed.toLowerCase().includes(q)))
+  return list.filter(it=>(S.market==="ALL"||it.market===S.market)&&(S.cat==="ALL"||(it.cat||"other")===S.cat)&&(!q||it.term.includes(q)||(it.ja||"").toLowerCase().includes(q)||it.seed.toLowerCase().includes(q)))
              .sort((a,b)=>b.score-a.score);
 }
 function render(){
@@ -212,9 +222,14 @@ function render(){
   const counts={}; list.forEach(it=>counts[it.market]=(counts[it.market]||0)+1);
   $("#markets").innerHTML = [["ALL","すべて",list.length],...Object.keys(counts).sort().map(m=>[m,MK[m]||m,counts[m]])]
     .map(([k,l,n])=>`<button class="chip" aria-pressed="${S.market===k}" data-mk="${k}">${l}<b>${n}</b></button>`).join("");
+  const inMk = list.filter(it=>S.market==="ALL"||it.market===S.market);
+  const cc={}; inMk.forEach(it=>{const c=it.cat||"other"; cc[c]=(cc[c]||0)+1});
+  const hasCat = list.some(it=>it.cat);
+  $("#cats").innerHTML = hasCat ? [["ALL","すべての分野",inMk.length],...Object.keys(CATLAB).filter(c=>cc[c]).map(c=>[c,CATLAB[c],cc[c]])]
+    .map(([k,l,n])=>`<button class="chip" aria-pressed="${S.cat===k}" data-cat="${k}">${l}<b>${n}</b></button>`).join("") : "";
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false"));
   const hideFilters = S.tab==="info";
-  $("#markets").hidden=hideFilters; $(".search").hidden=hideFilters;
+  $("#markets").hidden=hideFilters; $("#cats").hidden=hideFilters||!hasCat; $(".search").hidden=hideFilters;
 
   if(S.tab==="info"){$("#main").innerHTML=infoHTML();return}
   shown=filtered(list);
@@ -231,10 +246,13 @@ function infoHTML(){
   const r=repoInfo();
   const run = r ? `https://github.com/${r.owner}/${r.repo}/actions/workflows/daily.yml` : null;
   const cfg = r ? `https://github.com/${r.owner}/${r.repo}/edit/main/config.json` : null;
+  const pool = r ? `https://github.com/${r.owner}/${r.repo}/edit/main/seeds.json` : null;
   return `<div class="panel">
   <div class="card"><h3>今すぐ収集する</h3><p>毎朝6時に自動で集めます。すぐ集めたいときは、開いた画面で「Run workflow」を押してください。30分ほどで反映されます。</p>
     ${run?`<a class="btn" href="${run}" target="_blank" rel="noopener">GitHubで実行</a>`:`<p>GitHub Pages に置くとボタンが表示されます。</p>`}</div>
-  <div class="card"><h3>追う分野を変える</h3><p><code>config.json</code> の <code>seeds</code> に言葉を追加・削除します。</p>
+  <div class="card"><h3>毎日探す分野</h3><p>IT・科学・経済を中心に、毎日違う分野を自動で選びます。Wikipediaの新着記事と、前日に見つかった高ニッチ度の語も、翌日の探索の出発点になります。</p>
+    <p>辞書に言葉を足すときは <code>seeds.json</code>、毎日必ず探したい言葉は <code>config.json</code> の <code>seeds</code> に書きます。</p>
+    ${pool?`<a class="btn" href="${pool}" target="_blank" rel="noopener">seeds.json を編集</a>`:""}
     ${cfg?`<a class="btn" href="${cfg}" target="_blank" rel="noopener">config.json を編集</a>`:""}</div>
   <div class="card"><h3>ニッチ度の見方</h3><div class="legend">
     <div>${signal(.95)}<span>0.85以上：ごく少数だけが検索</span></div>
@@ -274,7 +292,8 @@ function openSheet(it){
 document.addEventListener("click",e=>{
   const d=e.target.closest("[data-day]"); if(d){pick(d.dataset.day);return}
   const m=e.target.closest("[data-mk]"); if(m){S.market=m.dataset.mk;render();return}
-  const t=e.target.closest("[data-tab]"); if(t){S.tab=t.dataset.tab;S.market="ALL";render();scrollTo(0,0);return}
+  const cg=e.target.closest("[data-cat]"); if(cg){S.cat=cg.dataset.cat;render();return}
+  const t=e.target.closest("[data-tab]"); if(t){S.tab=t.dataset.tab;S.market="ALL";S.cat="ALL";render();scrollTo(0,0);return}
   const r=e.target.closest(".row"); if(r){openSheet(shown[+r.dataset.i]);return}
 });
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelector(".sheet-bg")?.remove()});
